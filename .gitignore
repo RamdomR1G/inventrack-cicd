@@ -1,0 +1,26 @@
+# Secretos (nunca subirlos)
+.env
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+
+# Node / frontend compilado
+node_modules/
+frontend/dist/
+
+# Resultados de pruebas (se generan en cada ejecución)
+reports/
+test-results/
+
+# Editor y sistema operativo
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini

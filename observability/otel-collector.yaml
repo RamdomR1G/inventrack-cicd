@@ -1,0 +1,97 @@
+# OpenTelemetry Collector: recibe OTLP de la app y del navegador, toma métricas del
+# servidor (CPU, RAM, red, disco, carga) y de los sensores de temperatura, y lo
+# envía todo a OpenObserve por OTLP/HTTP.
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+        cors:
+          allowed_origins: ["*"]
+      grpc:
+        endpoint: 0.0.0.0:4317
+
+  hostmetrics:
+    collection_interval: 15s
+    root_path: /hostfs
+    scrapers:
+      cpu:
+        metrics:
+          system.cpu.utilization: { enabled: true }
+      memory:
+        metrics:
+          system.memory.utilization: { enabled: true }
+      disk: {}
+      filesystem:
+        metrics:
+          system.filesystem.utilization: { enabled: true }
+      load: {}
+      paging: {}
+      processes: {}
+
+  # node-exporter (en la red del host): tráfico de las interfaces reales y sensores de temperatura.
+  prometheus/sensors:
+    config:
+      scrape_configs:
+        - job_name: node-sensors
+          scrape_interval: 15s
+          static_configs:
+            - targets: ["host.docker.internal:9100"]
+          metric_relabel_configs:
+            - source_labels: [__name__]
+              regex: "node_(network_receive_bytes_total|network_transmit_bytes_total|hwmon_temp_celsius|thermal_zone_temp|hwmon_chip_names)"
+              action: keep
+
+processors:
+  memory_limiter:
+    check_interval: 5s
+    limit_percentage: 75
+    spike_limit_percentage: 20
+  batch:
+    send_batch_size: 1024
+    timeout: 5s
+  resourcedetection:
+    detectors: [env, ec2, system]
+    timeout: 3s
+    override: false
+    system:
+      hostname_sources: [os]
+  resource/host:
+    attributes:
+      - key: service.name
+        value: ec2-host
+        action: upsert
+      - key: host.name
+        value: ${env:HOST_NAME}
+        action: upsert
+
+exporters:
+  otlphttp/openobserve:
+    endpoint: http://openobserve:5080/api/default
+    headers:
+      Authorization: Basic ${env:O2_AUTH}
+      stream-name: default
+  debug:
+    verbosity: basic
+
+service:
+  telemetry:
+    logs:
+      level: warn
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, resourcedetection, batch]
+      exporters: [otlphttp/openobserve]
+    metrics/app:
+      receivers: [otlp]
+      processors: [memory_limiter, resourcedetection, batch]
+      exporters: [otlphttp/openobserve]
+    metrics/host:
+      receivers: [hostmetrics, prometheus/sensors]
+      processors: [memory_limiter, resourcedetection, resource/host, batch]
+      exporters: [otlphttp/openobserve]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, resourcedetection, batch]
+      exporters: [otlphttp/openobserve]

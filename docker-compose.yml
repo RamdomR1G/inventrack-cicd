@@ -1,0 +1,57 @@
+# Aplicación InvenTrack: PostgreSQL + API FastAPI + frontend React (nginx).
+# En la EC2 se levanta junto con docker-compose.observability.yml.
+name: inventrack
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: inventrack
+      POSTGRES_USER: inventrack
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-inventrack}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U inventrack -d inventrack"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build: ./backend
+    image: inventrack-api:${APP_VERSION:-dev}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg://inventrack:${POSTGRES_PASSWORD:-inventrack}@db:5432/inventrack
+      JWT_SECRET: ${JWT_SECRET:---}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@inventrack.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin123*}
+      APP_VERSION: ${APP_VERSION:-dev}
+      APP_ENV: ${APP_ENV:-local}
+      OTEL_SDK_DISABLED: ${OTEL_SDK_DISABLED:-false}
+      OTEL_SERVICE_NAME: inventrack-api
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        APP_VERSION: ${APP_VERSION:-dev}
+    image: inventrack-web:${APP_VERSION:-dev}
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${WEB_PORT:-80}:80"
+
+volumes:
+  pgdata:
+
+networks:
+  default:
+    name: inventrack_net

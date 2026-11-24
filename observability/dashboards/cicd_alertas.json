@@ -1,0 +1,550 @@
+{
+  "version": 5,
+  "title": "CI/CD y alertas",
+  "description": "Ejecuciones de GitHub Actions, despliegues en EC2 y alertas disparadas",
+  "role": "",
+  "owner": "admin@inventrack.com",
+  "tabs": [
+    {
+      "tabId": "default",
+      "name": "Default",
+      "panels": [
+        {
+          "id": "Panel_ID20",
+          "type": "table",
+          "title": "Ejecuciones del pipeline",
+          "description": "",
+          "config": {
+            "show_legends": true,
+            "legends_position": "bottom",
+            "decimals": 2,
+            "axis_border_show": false,
+            "legend_width": {
+              "unit": "px"
+            },
+            "base_map": {
+              "type": "osm"
+            },
+            "map_view": {
+              "zoom": 1,
+              "lat": 0,
+              "lng": 0
+            },
+            "map_symbol_config": {
+              "size": "by Value",
+              "min": 1,
+              "max": 100
+            },
+            "connect_nulls": true,
+            "no_value_replacement": "",
+            "wrap_table_cells": false,
+            "table_transpose": false,
+            "table_dynamic_columns": false,
+            "mark_line": [],
+            "override_config": []
+          },
+          "queryType": "sql",
+          "queries": [
+            {
+              "query": "SELECT timestamp AS fecha, event_type AS evento, status AS estado, branch AS rama, commit_short AS commit, actor AS usuario, tests_passed AS aprobadas, tests_failed AS fallidas, message AS detalle, run_url AS ejecucion FROM \"cicd_pipeline\" ORDER BY _timestamp DESC LIMIT 100",
+              "vrlFunctionQuery": "",
+              "customQuery": true,
+              "fields": {
+                "stream": "cicd_pipeline",
+                "stream_type": "logs",
+                "x": [
+                  {
+                    "label": "fecha",
+                    "alias": "fecha",
+                    "column": "fecha",
+                    "color": null,
+                    "isDerived": false
+                  }
+                ],
+                "y": [
+                  {
+                    "label": "evento",
+                    "alias": "evento",
+                    "column": "evento",
+                    "color": "#0f766e",
+                    "isDerived": false
+                  },
+                  {
+                    "label": "estado",
+                    "alias": "estado",
+                    "column": "estado",
+                    "color": "#0f766e",
+                    "isDerived": false
+                  },
+                  {
+                    "label": "rama",
+                    "alias": "rama",
+                    "column": "rama",
+                    "color": "#0f766e",
+                    "isDerived": false
+                  },
+                  {
+                    "label": "commit",
+                    "alias": "commit",
+                    "column": "commit",
+                    "color": "#0f766e",
+                    "isDerived": false
+                  },
+                  {
+                    "label": "usuario",
+                    "alias": "usuario",
+                    "column": "usuario",
+                    "color": "#0f766e",
+                    "isDerived": false
+                  },
+                  {
+                    "label": "aprobadas",
+                    "alias": "aprobadas",
+                    "column": "aprobadas",
+                    "color": "#0f766e",
+                    "isDerived": false
+                  },
+                  {
+                    "label": "fallidas",
+                    "alias": "fallidas",
+                    "column": "fallidas",
+                    "color": "#0f766e",
+                    "isDerived": false
+                  },
+                  {
+                    "label": "detalle",
+                    "alias": "detalle",
+                    "column": "detalle",
+                    "color": "#0f766e",
+                    "isDerived": false
+                  },
+                  {
+                    "label": "ejecucion",
+                    "alias": "ejecucion",
+                    "column": "ejecucion",
+                    "color": "#0f766e",
+                    "isDerived": false
+                  }
+                ],
+                "z": [],
+                "breakdown": [],
+                "filter": {
+                  "filterType": "group",
+                  "logicalOperator": "AND",
+                  "conditions": []
+                }
+              },
+              "config": {
+                "promql_legend": "",
+                "layer_type": "scatter",
+                "weight_fixed": 1,
+                "limit": 0,
+                "min": 0,
+                "max": 100,
+                "time_shift": []
+              }
+            }
+          ],
+          "layout": {
+            "x": 0,
+            "y": 0,
+            "w": 48,
+            "h": 11,
+            "i": 20
+          },
+          "htmlContent": "",
+          "markdownContent": "",
+          "customChartContent": ""
+        },
+        {
+          "id": "Panel_ID21",
+          "type": "bar",
+          "title": "Resultados por estado",
+          "description": "",
+          "config": {
+            "show_legends": true,
+            "legends_position": "bottom",
+            "decimals": 2,
+            "axis_border_show": false,
+            "legend_width": {
+              "unit": "px"
+            },
+            "base_map": {
+              "type": "osm"
+            },
+            "map_view": {
+              "zoom": 1,
+              "lat": 0,
+              "lng": 0
+            },
+            "map_symbol_config": {
+              "size": "by Value",
+              "min": 1,
+              "max": 100
+            },
+            "connect_nulls": true,
+            "no_value_replacement": "",
+            "wrap_table_cells": false,
+            "table_transpose": false,
+            "table_dynamic_columns": false,
+            "mark_line": [],
+            "override_config": []
+          },
+          "queryType": "sql",
+          "queries": [
+            {
+              "query": "SELECT histogram(_timestamp, '1 hour') AS x_axis_1, concat(event_type, ' ', status) AS breakdown_1, count(*) AS y_axis_1 FROM \"cicd_pipeline\" GROUP BY x_axis_1, breakdown_1 ORDER BY x_axis_1",
+              "vrlFunctionQuery": "",
+              "customQuery": true,
+              "fields": {
+                "stream": "cicd_pipeline",
+                "stream_type": "logs",
+                "x": [
+                  {
+                    "label": "Hora",
+                    "alias": "x_axis_1",
+                    "column": "x_axis_1",
+                    "color": null,
+                    "isDerived": false
+                  }
+                ],
+                "y": [
+                  {
+                    "label": "Total",
+                    "alias": "y_axis_1",
+                    "column": "y_axis_1",
+                    "color": "#0f766e",
+                    "isDerived": false
+                  }
+                ],
+                "z": [
+                  {
+                    "label": "Serie",
+                    "alias": "breakdown_1",
+                    "column": "breakdown_1",
+                    "color": null,
+                    "isDerived": false
+                  }
+                ],
+                "breakdown": [
+                  {
+                    "label": "Serie",
+                    "alias": "breakdown_1",
+                    "column": "breakdown_1",
+                    "color": null,
+                    "isDerived": false
+                  }
+                ],
+                "filter": {
+                  "filterType": "group",
+                  "logicalOperator": "AND",
+                  "conditions": []
+                }
+              },
+              "config": {
+                "promql_legend": "",
+                "layer_type": "scatter",
+                "weight_fixed": 1,
+                "limit": 0,
+                "min": 0,
+                "max": 100,
+                "time_shift": []
+              }
+            }
+          ],
+          "layout": {
+            "x": 0,
+            "y": 11,
+            "w": 24,
+            "h": 9,
+            "i": 21
+          },
+          "htmlContent": "",
+          "markdownContent": "",
+          "customChartContent": ""
+        },
+        {
+          "id": "Panel_ID22",
+          "type": "metric",
+          "title": "Despliegues exitosos",
+          "description": "",
+          "config": {
+            "show_legends": true,
+            "legends_position": "bottom",
+            "decimals": 0,
+            "axis_border_show": false,
+            "legend_width": {
+              "unit": "px"
+            },
+            "base_map": {
+              "type": "osm"
+            },
+            "map_view": {
+              "zoom": 1,
+              "lat": 0,
+              "lng": 0
+            },
+            "map_symbol_config": {
+              "size": "by Value",
+              "min": 1,
+              "max": 100
+            },
+            "connect_nulls": true,
+            "no_value_replacement": "",
+            "wrap_table_cells": false,
+            "table_transpose": false,
+            "table_dynamic_columns": false,
+            "mark_line": [],
+            "override_config": []
+          },
+          "queryType": "sql",
+          "queries": [
+            {
+              "query": "SELECT count(*) AS y_axis_1 FROM \"cicd_pipeline\" WHERE event_type = 'deploy' AND status = 'success'",
+              "vrlFunctionQuery": "",
+              "customQuery": true,
+              "fields": {
+                "stream": "cicd_pipeline",
+                "stream_type": "logs",
+                "x": [],
+                "y": [
+                  {
+                    "label": "Total",
+                    "alias": "y_axis_1",
+                    "column": "y_axis_1",
+                    "color": "#0f766e",
+                    "isDerived": false
+                  }
+                ],
+                "z": [],
+                "breakdown": [],
+                "filter": {
+                  "filterType": "group",
+                  "logicalOperator": "AND",
+                  "conditions": []
+                }
+              },
+              "config": {
+                "promql_legend": "",
+                "layer_type": "scatter",
+                "weight_fixed": 1,
+                "limit": 0,
+                "min": 0,
+                "max": 100,
+                "time_shift": []
+              }
+            }
+          ],
+          "layout": {
+            "x": 24,
+            "y": 11,
+            "w": 12,
+            "h": 9,
+            "i": 22
+          },
+          "htmlContent": "",
+          "markdownContent": "",
+          "customChartContent": ""
+        },
+        {
+          "id": "Panel_ID23",
+          "type": "metric",
+          "title": "Despliegues bloqueados",
+          "description": "",
+          "config": {
+            "show_legends": true,
+            "legends_position": "bottom",
+            "decimals": 0,
+            "axis_border_show": false,
+            "legend_width": {
+              "unit": "px"
+            },
+            "base_map": {
+              "type": "osm"
+            },
+            "map_view": {
+              "zoom": 1,
+              "lat": 0,
+              "lng": 0
+            },
+            "map_symbol_config": {
+              "size": "by Value",
+              "min": 1,
+              "max": 100
+            },
+            "connect_nulls": true,
+            "no_value_replacement": "",
+            "wrap_table_cells": false,
+            "table_transpose": false,
+            "table_dynamic_columns": false,
+            "mark_line": [],
+            "override_config": []
+          },
+          "queryType": "sql",
+          "queries": [
+            {
+              "query": "SELECT count(*) AS y_axis_1 FROM \"cicd_pipeline\" WHERE event_type = 'deploy_blocked'",
+              "vrlFunctionQuery": "",
+              "customQuery": true,
+              "fields": {
+                "stream": "cicd_pipeline",
+                "stream_type": "logs",
+                "x": [],
+                "y": [
+                  {
+                    "label": "Total",
+                    "alias": "y_axis_1",
+                    "column": "y_axis_1",
+                    "color": "#0f766e",
+                    "isDerived": false
+                  }
+                ],
+                "z": [],
+                "breakdown": [],
+                "filter": {
+                  "filterType": "group",
+                  "logicalOperator": "AND",
+                  "conditions": []
+                }
+              },
+              "config": {
+                "promql_legend": "",
+                "layer_type": "scatter",
+                "weight_fixed": 1,
+                "limit": 0,
+                "min": 0,
+                "max": 100,
+                "time_shift": []
+              }
+            }
+          ],
+          "layout": {
+            "x": 36,
+            "y": 11,
+            "w": 12,
+            "h": 9,
+            "i": 23
+          },
+          "htmlContent": "",
+          "markdownContent": "",
+          "customChartContent": ""
+        },
+        {
+          "id": "Panel_ID24",
+          "type": "table",
+          "title": "Alertas disparadas",
+          "description": "",
+          "config": {
+            "show_legends": true,
+            "legends_position": "bottom",
+            "decimals": 2,
+            "axis_border_show": false,
+            "legend_width": {
+              "unit": "px"
+            },
+            "base_map": {
+              "type": "osm"
+            },
+            "map_view": {
+              "zoom": 1,
+              "lat": 0,
+              "lng": 0
+            },
+            "map_symbol_config": {
+              "size": "by Value",
+              "min": 1,
+              "max": 100
+            },
+            "connect_nulls": true,
+            "no_value_replacement": "",
+            "wrap_table_cells": false,
+            "table_transpose": false,
+            "table_dynamic_columns": false,
+            "mark_line": [],
+            "override_config": []
+          },
+          "queryType": "sql",
+          "queries": [
+            {
+              "query": "SELECT _timestamp AS hora, alert_name AS alerta, severity AS severidad, detail AS detalle FROM \"alert_events\" ORDER BY _timestamp DESC LIMIT 50",
+              "vrlFunctionQuery": "",
+              "customQuery": true,
+              "fields": {
+                "stream": "alert_events",
+                "stream_type": "logs",
+                "x": [
+                  {
+                    "label": "hora",
+                    "alias": "hora",
+                    "column": "hora",
+                    "color": null,
+                    "isDerived": false
+                  }
+                ],
+                "y": [
+                  {
+                    "label": "alerta",
+                    "alias": "alerta",
+                    "column": "alerta",
+                    "color": "#0f766e",
+                    "isDerived": false
+                  },
+                  {
+                    "label": "severidad",
+                    "alias": "severidad",
+                    "column": "severidad",
+                    "color": "#0f766e",
+                    "isDerived": false
+                  },
+                  {
+                    "label": "detalle",
+                    "alias": "detalle",
+                    "column": "detalle",
+                    "color": "#0f766e",
+                    "isDerived": false
+                  }
+                ],
+                "z": [],
+                "breakdown": [],
+                "filter": {
+                  "filterType": "group",
+                  "logicalOperator": "AND",
+                  "conditions": []
+                }
+              },
+              "config": {
+                "promql_legend": "",
+                "layer_type": "scatter",
+                "weight_fixed": 1,
+                "limit": 0,
+                "min": 0,
+                "max": 100,
+                "time_shift": []
+              }
+            }
+          ],
+          "layout": {
+            "x": 0,
+            "y": 20,
+            "w": 48,
+            "h": 9,
+            "i": 24
+          },
+          "htmlContent": "",
+          "markdownContent": "",
+          "customChartContent": ""
+        }
+      ]
+    }
+  ],
+  "variables": {
+    "list": [],
+    "showDynamicFilters": true
+  },
+  "defaultDatetimeDuration": {
+    "type": "relative",
+    "relativeTimePeriod": "7d",
+    "startTime": 0,
+    "endTime": 0
+  }
+}

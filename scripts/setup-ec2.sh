@@ -63,6 +63,8 @@ echo "==> 5/6 Contenedores (observabilidad y aplicación)"
 export APP_VERSION="$(git rev-parse --short HEAD)"
 sudo -E docker compose -f docker-compose.yml up -d --build
 sudo docker compose -f docker-compose.observability.yml up -d
+# "sudo -E" deja ~/.docker como propiedad de root; se devuelve al usuario para que el despliegue por SSH pueda construir.
+sudo chown -R "$USER:$USER" "$HOME/.docker" 2>/dev/null || true
 
 echo "==> 6/6 Tableros y alertas de OpenObserve"
 O2_URL=http://localhost:5080 O2_USER="$ZO_ROOT_USER_EMAIL" O2_PASSWORD="$ZO_ROOT_USER_PASSWORD" python3 scripts/o2_setup.py

@@ -17,7 +17,7 @@ log = logging.getLogger("inventrack.products")
 SORTS = {
     "id": Product.id.asc(), "-id": Product.id.desc(),
     "name": func.lower(Product.name).asc(), "-name": func.lower(Product.name).desc(),
-    "price": Product.price.asc(), "-price": Product.price.asc(),
+    "price": Product.price.asc(), "-price": Product.price.desc(),
     "stock": Product.stock.asc(), "-stock": Product.stock.desc(),
 }
 SORT_PATTERN = "^(" + "|".join(k.replace("-", r"\-") for k in SORTS) + ")$"

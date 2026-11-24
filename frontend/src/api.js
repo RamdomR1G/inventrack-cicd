@@ -1,3 +1,5 @@
+import { clientHeaders, recordApiCall } from './client'
+
 const TOKEN_KEY = 'inventrack_token'
 const USER_KEY = 'inventrack_user'
 
@@ -44,15 +46,18 @@ export function translate(message) {
 }
 
 export async function api(path, { method = 'GET', body, auth = true } = {}) {
-  const headers = { Accept: 'application/json' }
+  const headers = { Accept: 'application/json', ...clientHeaders() }
   if (body !== undefined) headers['Content-Type'] = 'application/json'
   if (auth && session.token) headers.Authorization = `Bearer ${session.token}`
   let res
+  const start = performance.now()
   try {
     res = await fetch(`/api${path}`, { method, headers, body: body !== undefined ? JSON.stringify(body) : undefined })
   } catch {
+    recordApiCall(method, path, 0, performance.now() - start)
     throw new ApiError(0, 'No se pudo conectar con el servidor')
   }
+  recordApiCall(method, path, res.status, performance.now() - start)
   if (res.status === 401 && auth) {
     session.clear()
     window.dispatchEvent(new Event('inventrack:logout'))

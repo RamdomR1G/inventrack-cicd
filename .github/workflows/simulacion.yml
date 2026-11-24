@@ -1,0 +1,82 @@
+# Simulación de clientes en distintas ubicaciones y dispositivos contra el sistema desplegado en EC2.
+# Se ejecuta a mano: Actions -> "Simulación de clientes" -> Run workflow.
+# Cada usuario virtual es un navegador con otra zona horaria, idioma, coordenadas, dispositivo,
+# red y CPU (ver scripts/simulate_clients.py). Los resultados se ven en OpenObserve, tablero
+# "Clientes y dispositivos (simulación)", y en el resumen de esta ejecución.
+name: Simulación de clientes
+
+on:
+  workflow_dispatch:
+    inputs:
+      minutes:
+        description: "Duración en minutos"
+        default: "5"
+        required: true
+      users:
+        description: "Usuarios virtuales por perfil"
+        default: "1"
+        required: true
+      profiles:
+        description: "Perfiles (separados por coma): cdmx, monterrey, tijuana, merida, madrid"
+        default: "cdmx,monterrey,tijuana,merida,madrid"
+        required: true
+
+permissions:
+  contents: read
+
+env:
+  O2_URL: ${{ secrets.O2_URL }}
+  O2_USER: ${{ secrets.O2_USER }}
+  O2_PASSWORD: ${{ secrets.O2_PASSWORD }}
+
+jobs:
+  simulate:
+    name: Usuarios virtuales (${{ inputs.profiles }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-test.txt
+
+      - name: Instalar Playwright
+        run: |
+          pip install -r requirements-test.txt
+          python -m playwright install --with-deps chromium
+
+      - name: Registrar inicio en OpenObserve
+        run: >
+          python3 scripts/o2_event.py simulation started
+          --message "Simulación de ${{ inputs.minutes }} min, ${{ inputs.users }} usuario(s) por perfil: ${{ inputs.profiles }}"
+
+      - name: Ejecutar simulación
+        env:
+          SIM_URL: http://${{ secrets.EC2_HOST }}
+          SIM_EMAIL: ${{ secrets.APP_USER }}
+          SIM_PASSWORD: ${{ secrets.APP_PASSWORD }}
+        run: >
+          python scripts/simulate_clients.py --minutes "${{ inputs.minutes }}" --users "${{ inputs.users }}"
+          --profiles "${{ inputs.profiles }}" --out reports/simulacion
+
+      - name: Resumen
+        if: always()
+        run: |
+          if [ -f reports/simulacion/resumen.md ]; then cat reports/simulacion/resumen.md >> "$GITHUB_STEP_SUMMARY"; fi
+
+      - name: Registrar fin en OpenObserve
+        if: always()
+        run: >
+          python3 scripts/o2_event.py simulation ${{ job.status }}
+          --message "Simulación terminada (${{ job.status }}). Ver tablero 'Clientes y dispositivos (simulación)'"
+
+      - name: Publicar resultados
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: simulacion-${{ github.run_number }}
+          path: reports/simulacion/
+          retention-days: 14

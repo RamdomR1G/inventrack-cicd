@@ -121,7 +121,7 @@ class MetricsMiddleware(BaseHTTPMiddleware):
             elapsed = (time.perf_counter() - start) * 1000
             route = request.scope.get("route")
             endpoint = getattr(route, "path", None) or request.url.path
-            if endpoint.startswith("/api") and endpoint != "/api/health":
+            if endpoint.startswith("/api") and endpoint not in ("/api/health", "/api/telemetry/client"):
                 attrs = {"http_method": request.method, "http_route": endpoint, "status_code": str(status)}
                 REQUESTS.add(1, attrs)
                 LATENCY.record(elapsed, attrs)
@@ -132,4 +132,8 @@ class MetricsMiddleware(BaseHTTPMiddleware):
                     "event": "http_request", "http_method": request.method, "http_route": endpoint,
                     "url_path": request.url.path, "status_code": status, "duration_ms": round(elapsed, 2),
                     "client_ip": request.headers.get("x-real-ip") or (request.client.host if request.client else ""),
+                    # Contexto que envía el navegador (ubicación lógica, dispositivo y zona horaria)
+                    "client_location": request.headers.get("x-client-location", "")[:40],
+                    "client_device": request.headers.get("x-client-device", "")[:20],
+                    "client_timezone": request.headers.get("x-client-timezone", "")[:40],
                 })

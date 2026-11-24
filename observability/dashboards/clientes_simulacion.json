@@ -1,0 +1,964 @@
+{
+  "version": 5,
+  "title": "Clientes y dispositivos (simulación)",
+  "description": "Ubicación, zona horaria, dispositivo, red, CPU y GPU de los clientes; tiempo percibido frente al del servidor",
+  "role": "",
+  "owner": "admin@inventrack.com",
+  "tabs": [
+    {
+      "tabId": "default",
+      "name": "Default",
+      "panels": [
+        {
+          "id": "Panel_ID25",
+          "type": "line",
+          "title": "Tiempo de respuesta percibido por ubicación (ms)",
+          "description": "Lo que tarda cada llamada a la API vista desde el navegador: incluye la red del cliente",
+          "config": {
+            "show_legends": true,
+            "legends_position": "bottom",
+            "decimals": 2,
+            "axis_border_show": false,
+            "legend_width": {
+              "unit": "px"
+            },
+            "base_map": {
+              "type": "osm"
+            },
+            "map_view": {
+              "zoom": 1,
+              "lat": 0,
+              "lng": 0
+            },
+            "map_symbol_config": {
+              "size": "by Value",
+              "min": 1,
+              "max": 100
+            },
+            "connect_nulls": true,
+            "no_value_replacement": "",
+            "wrap_table_cells": false,
+            "table_transpose": false,
+            "table_dynamic_columns": false,
+            "mark_line": [],
+            "override_config": [],
+            "unit": "custom",
+            "unit_custom": "ms"
+          },
+          "queryType": "sql",
+          "queries": [
+            {
+              "query": "SELECT histogram(_timestamp) AS x_axis_1, client_location AS breakdown_1, round(avg(duration_ms), 1) AS y_axis_1 FROM \"default\" WHERE event = 'client_api' GROUP BY x_axis_1, breakdown_1 ORDER BY x_axis_1",
+              "vrlFunctionQuery": "",
+              "customQuery": true,
+              "fields": {
+                "stream": "default",
+                "stream_type": "logs",
+                "x": [
+                  {
+                    "label": "Hora",
+                    "alias": "x_axis_1",
+                    "column": "x_axis_1",
+                    "color": null,
+                    "isDerived": false
+                  }
+                ],
+                "y": [
+                  {
+                    "label": "ms percibidos",
+                    "alias": "y_axis_1",
+                    "column": "y_axis_1",
+                    "color": "#0f766e",
+                    "isDerived": false
+                  }
+                ],
+                "z": [
+                  {
+                    "label": "Ubicación",
+                    "alias": "breakdown_1",
+                    "column": "breakdown_1",
+                    "color": null,
+                    "isDerived": false
+                  }
+                ],
+                "breakdown": [
+                  {
+                    "label": "Ubicación",
+                    "alias": "breakdown_1",
+                    "column": "breakdown_1",
+                    "color": null,
+                    "isDerived": false
+                  }
+                ],
+                "filter": {
+                  "filterType": "group",
+                  "logicalOperator": "AND",
+                  "conditions": []
+                }
+              },
+              "config": {
+                "promql_legend": "",
+                "layer_type": "scatter",
+                "weight_fixed": 1,
+                "limit": 0,
+                "min": 0,
+                "max": 100,
+                "time_shift": []
+              }
+            }
+          ],
+          "layout": {
+            "x": 0,
+            "y": 0,
+            "w": 24,
+            "h": 9,
+            "i": 25
+          },
+          "htmlContent": "",
+          "markdownContent": "",
+          "customChartContent": ""
+        },
+        {
+          "id": "Panel_ID26",
+          "type": "bar",
+          "title": "Peticiones por ubicación",
+          "description": "",
+          "config": {
+            "show_legends": true,
+            "legends_position": "bottom",
+            "decimals": 2,
+            "axis_border_show": false,
+            "legend_width": {
+              "unit": "px"
+            },
+            "base_map": {
+              "type": "osm"
+            },
+            "map_view": {
+              "zoom": 1,
+              "lat": 0,
+              "lng": 0
+            },
+            "map_symbol_config": {
+              "size": "by Value",
+              "min": 1,
+              "max": 100
+            },
+            "connect_nulls": true,
+            "no_value_replacement": "",
+            "wrap_table_cells": false,
+            "table_transpose": false,
+            "table_dynamic_columns": false,
+            "mark_line": [],
+            "override_config": []
+          },
+          "queryType": "sql",
+          "queries": [
+            {
+              "query": "SELECT histogram(_timestamp) AS x_axis_1, client_location AS breakdown_1, count(*) AS y_axis_1 FROM \"default\" WHERE event = 'client_api' GROUP BY x_axis_1, breakdown_1 ORDER BY x_axis_1",
+              "vrlFunctionQuery": "",
+              "customQuery": true,
+              "fields": {
+                "stream": "default",
+                "stream_type": "logs",
+                "x": [
+                  {
+                    "label": "Hora",
+                    "alias": "x_axis_1",
+                    "column": "x_axis_1",
+                    "color": null,
+                    "isDerived": false
+                  }
+                ],
+                "y": [
+                  {
+                    "label": "Peticiones",
+                    "alias": "y_axis_1",
+                    "column": "y_axis_1",
+                    "color": "#0f766e",
+                    "isDerived": false
+                  }
+                ],
+                "z": [
+                  {
+                    "label": "Ubicación",
+                    "alias": "breakdown_1",
+                    "column": "breakdown_1",
+                    "color": null,
+                    "isDerived": false
+                  }
+                ],
+                "breakdown": [
+                  {
+                    "label": "Ubicación",
+                    "alias": "breakdown_1",
+                    "column": "breakdown_1",
+                    "color": null,
+                    "isDerived": false
+                  }
+                ],
+                "filter": {
+                  "filterType": "group",
+                  "logicalOperator": "AND",
+                  "conditions": []
+                }
+              },
+              "config": {
+                "promql_legend": "",
+                "layer_type": "scatter",
+                "weight_fixed": 1,
+                "limit": 0,
+                "min": 0,
+                "max": 100,
+                "time_shift": []
+              }
+            }
+          ],
+          "layout": {
+            "x": 24,
+            "y": 0,
+            "w": 24,
+            "h": 9,
+            "i": 26
+          },
+          "htmlContent": "",
+          "markdownContent": "",
+          "customChartContent": ""
+        },
+        {
+          "id": "Panel_ID27",
+          "type": "table",
+          "title": "Comparativa por ubicación",
+          "description": "",
+          "config": {
+            "show_legends": true,
+            "legends_position": "bottom",
+            "decimals": 2,
+            "axis_border_show": false,
+            "legend_width": {
+              "unit": "px"
+            },
+            "base_map": {
+              "type": "osm"
+            },
+            "map_view": {
+              "zoom": 1,
+              "lat": 0,
+              "lng": 0
+            },
+            "map_symbol_config": {
+              "size": "by Value",
+              "min": 1,
+              "max": 100
+            },
+            "connect_nulls": true,
+            "no_value_replacement": "",
+            "wrap_table_cells": false,
+            "table_transpose": false,
+            "table_dynamic_columns": false,
+            "mark_line": [],
+            "override_config": []
+          },
+          "queryType": "sql",
+          "queries": [
+            {
+              "query": "SELECT client_location AS ubicacion, max(client_timezone) AS zona_horaria, max(client_device) AS dispositivo, count(*) AS peticiones, round(avg(duration_ms), 1) AS percibido_prom_ms, round(approx_percentile_cont(duration_ms, 0.95), 1) AS percibido_p95_ms, sum(CASE WHEN status_code >= 400 OR status_code = 0 THEN 1 ELSE 0 END) AS errores FROM \"default\" WHERE event = 'client_api' GROUP BY ubicacion ORDER BY percibido_prom_ms DESC",
+              "vrlFunctionQuery": "",
+              "customQuery": true,
+              "fields": {
+                "stream": "default",
+                "stream_type": "logs",
+                "x": [
+                  {
+                    "label": "ubicacion",
+                    "alias": "ubicacion",
+                    "column": "ubicacion",
+                    "color": null,
+                    "isDerived": false
+                  }
+                ],
+                "y": [
+                  {
+                    "label": "zona_horaria",
+                    "alias": "zona_horaria",
+                    "column": "zona_horaria",
+                    "color": "#0f766e",
+                    "isDerived": false
+                  },
+                  {
+                    "label": "dispositivo",
+                    "alias": "dispositivo",
+                    "column": "dispositivo",
+                    "color": "#0f766e",
+                    "isDerived": false
+                  },
+                  {
+                    "label": "peticiones",
+                    "alias": "peticiones",
+                    "column": "peticiones",
+                    "color": "#0f766e",
+                    "isDerived": false
+                  },
+                  {
+                    "label": "percibido_prom_ms",
+                    "alias": "percibido_prom_ms",
+                    "column": "percibido_prom_ms",
+                    "color": "#0f766e",
+                    "isDerived": false
+                  },
+                  {
+                    "label": "percibido_p95_ms",
+                    "alias": "percibido_p95_ms",
+                    "column": "percibido_p95_ms",
+                    "color": "#0f766e",
+                    "isDerived": false
+                  },
+                  {
+                    "label": "errores",
+                    "alias": "errores",
+                    "column": "errores",
+                    "color": "#0f766e",
+                    "isDerived": false
+                  }
+                ],
+                "z": [],
+                "breakdown": [],
+                "filter": {
+                  "filterType": "group",
+                  "logicalOperator": "AND",
+                  "conditions": []
+                }
+              },
+              "config": {
+                "promql_legend": "",
+                "layer_type": "scatter",
+                "weight_fixed": 1,
+                "limit": 0,
+                "min": 0,
+                "max": 100,
+                "time_shift": []
+              }
+            }
+          ],
+          "layout": {
+            "x": 0,
+            "y": 9,
+            "w": 48,
+            "h": 8,
+            "i": 27
+          },
+          "htmlContent": "",
+          "markdownContent": "",
+          "customChartContent": ""
+        },
+        {
+          "id": "Panel_ID28",
+          "type": "bar",
+          "title": "Tiempo en el servidor por ubicación (ms)",
+          "description": "Procesamiento dentro de la EC2: casi igual para todos; la diferencia está en la red y el equipo del cliente",
+          "config": {
+            "show_legends": true,
+            "legends_position": "bottom",
+            "decimals": 2,
+            "axis_border_show": false,
+            "legend_width": {
+              "unit": "px"
+            },
+            "base_map": {
+              "type": "osm"
+            },
+            "map_view": {
+              "zoom": 1,
+              "lat": 0,
+              "lng": 0
+            },
+            "map_symbol_config": {
+              "size": "by Value",
+              "min": 1,
+              "max": 100
+            },
+            "connect_nulls": true,
+            "no_value_replacement": "",
+            "wrap_table_cells": false,
+            "table_transpose": false,
+            "table_dynamic_columns": false,
+            "mark_line": [],
+            "override_config": [],
+            "unit": "custom",
+            "unit_custom": "ms"
+          },
+          "queryType": "sql",
+          "queries": [
+            {
+              "query": "SELECT client_location AS x_axis_1, round(avg(duration_ms), 1) AS y_axis_1 FROM \"default\" WHERE event = 'http_request' AND client_location != '' GROUP BY x_axis_1 ORDER BY x_axis_1",
+              "vrlFunctionQuery": "",
+              "customQuery": true,
+              "fields": {
+                "stream": "default",
+                "stream_type": "logs",
+                "x": [
+                  {
+                    "label": "Ubicación",
+                    "alias": "x_axis_1",
+                    "column": "x_axis_1",
+                    "color": null,
+                    "isDerived": false
+                  }
+                ],
+                "y": [
+                  {
+                    "label": "ms en servidor",
+                    "alias": "y_axis_1",
+                    "column": "y_axis_1",
+                    "color": "#0f766e",
+                    "isDerived": false
+                  }
+                ],
+                "z": [],
+                "breakdown": [],
+                "filter": {
+                  "filterType": "group",
+                  "logicalOperator": "AND",
+                  "conditions": []
+                }
+              },
+              "config": {
+                "promql_legend": "",
+                "layer_type": "scatter",
+                "weight_fixed": 1,
+                "limit": 0,
+                "min": 0,
+                "max": 100,
+                "time_shift": []
+              }
+            }
+          ],
+          "layout": {
+            "x": 0,
+            "y": 17,
+            "w": 16,
+            "h": 9,
+            "i": 28
+          },
+          "htmlContent": "",
+          "markdownContent": "",
+          "customChartContent": ""
+        },
+        {
+          "id": "Panel_ID29",
+          "type": "bar",
+          "title": "Carga de la página por ubicación (ms)",
+          "description": "Primer byte (TTFB) y carga completa de la página en el navegador",
+          "config": {
+            "show_legends": true,
+            "legends_position": "bottom",
+            "decimals": 2,
+            "axis_border_show": false,
+            "legend_width": {
+              "unit": "px"
+            },
+            "base_map": {
+              "type": "osm"
+            },
+            "map_view": {
+              "zoom": 1,
+              "lat": 0,
+              "lng": 0
+            },
+            "map_symbol_config": {
+              "size": "by Value",
+              "min": 1,
+              "max": 100
+            },
+            "connect_nulls": true,
+            "no_value_replacement": "",
+            "wrap_table_cells": false,
+            "table_transpose": false,
+            "table_dynamic_columns": false,
+            "mark_line": [],
+            "override_config": [],
+            "unit": "custom",
+            "unit_custom": "ms"
+          },
+          "queryType": "sql",
+          "queries": [
+            {
+              "query": "SELECT client_location AS x_axis_1, round(avg(ttfb_ms), 1) AS y_axis_1, round(avg(load_ms), 1) AS y_axis_2 FROM \"default\" WHERE event = 'client_page' GROUP BY x_axis_1 ORDER BY x_axis_1",
+              "vrlFunctionQuery": "",
+              "customQuery": true,
+              "fields": {
+                "stream": "default",
+                "stream_type": "logs",
+                "x": [
+                  {
+                    "label": "Ubicación",
+                    "alias": "x_axis_1",
+                    "column": "x_axis_1",
+                    "color": null,
+                    "isDerived": false
+                  }
+                ],
+                "y": [
+                  {
+                    "label": "Primer byte (TTFB)",
+                    "alias": "y_axis_1",
+                    "column": "y_axis_1",
+                    "color": "#0f766e",
+                    "isDerived": false
+                  },
+                  {
+                    "label": "Carga completa",
+                    "alias": "y_axis_2",
+                    "column": "y_axis_2",
+                    "color": "#0f766e",
+                    "isDerived": false
+                  }
+                ],
+                "z": [],
+                "breakdown": [],
+                "filter": {
+                  "filterType": "group",
+                  "logicalOperator": "AND",
+                  "conditions": []
+                }
+              },
+              "config": {
+                "promql_legend": "",
+                "layer_type": "scatter",
+                "weight_fixed": 1,
+                "limit": 0,
+                "min": 0,
+                "max": 100,
+                "time_shift": []
+              }
+            }
+          ],
+          "layout": {
+            "x": 16,
+            "y": 17,
+            "w": 16,
+            "h": 9,
+            "i": 29
+          },
+          "htmlContent": "",
+          "markdownContent": "",
+          "customChartContent": ""
+        },
+        {
+          "id": "Panel_ID30",
+          "type": "bar",
+          "title": "CPU del dispositivo: prueba de cálculo (ms)",
+          "description": "Misma carga de cálculo en cada navegador: más milisegundos = CPU más lenta o más ocupada",
+          "config": {
+            "show_legends": true,
+            "legends_position": "bottom",
+            "decimals": 2,
+            "axis_border_show": false,
+            "legend_width": {
+              "unit": "px"
+            },
+            "base_map": {
+              "type": "osm"
+            },
+            "map_view": {
+              "zoom": 1,
+              "lat": 0,
+              "lng": 0
+            },
+            "map_symbol_config": {
+              "size": "by Value",
+              "min": 1,
+              "max": 100
+            },
+            "connect_nulls": true,
+            "no_value_replacement": "",
+            "wrap_table_cells": false,
+            "table_transpose": false,
+            "table_dynamic_columns": false,
+            "mark_line": [],
+            "override_config": [],
+            "unit": "custom",
+            "unit_custom": "ms"
+          },
+          "queryType": "sql",
+          "queries": [
+            {
+              "query": "SELECT client_location AS x_axis_1, round(avg(cpu_bench_ms), 1) AS y_axis_1 FROM \"default\" WHERE event = 'client_device' GROUP BY x_axis_1 ORDER BY x_axis_1",
+              "vrlFunctionQuery": "",
+              "customQuery": true,
+              "fields": {
+                "stream": "default",
+                "stream_type": "logs",
+                "x": [
+                  {
+                    "label": "Ubicación",
+                    "alias": "x_axis_1",
+                    "column": "x_axis_1",
+                    "color": null,
+                    "isDerived": false
+                  }
+                ],
+                "y": [
+                  {
+                    "label": "ms de la prueba",
+                    "alias": "y_axis_1",
+                    "column": "y_axis_1",
+                    "color": "#0f766e",
+                    "isDerived": false
+                  }
+                ],
+                "z": [],
+                "breakdown": [],
+                "filter": {
+                  "filterType": "group",
+                  "logicalOperator": "AND",
+                  "conditions": []
+                }
+              },
+              "config": {
+                "promql_legend": "",
+                "layer_type": "scatter",
+                "weight_fixed": 1,
+                "limit": 0,
+                "min": 0,
+                "max": 100,
+                "time_shift": []
+              }
+            }
+          ],
+          "layout": {
+            "x": 32,
+            "y": 17,
+            "w": 16,
+            "h": 9,
+            "i": 30
+          },
+          "htmlContent": "",
+          "markdownContent": "",
+          "customChartContent": ""
+        },
+        {
+          "id": "Panel_ID31",
+          "type": "table",
+          "title": "Dispositivos detectados",
+          "description": "",
+          "config": {
+            "show_legends": true,
+            "legends_position": "bottom",
+            "decimals": 2,
+            "axis_border_show": false,
+            "legend_width": {
+              "unit": "px"
+            },
+            "base_map": {
+              "type": "osm"
+            },
+            "map_view": {
+              "zoom": 1,
+              "lat": 0,
+              "lng": 0
+            },
+            "map_symbol_config": {
+              "size": "by Value",
+              "min": 1,
+              "max": 100
+            },
+            "connect_nulls": true,
+            "no_value_replacement": "",
+            "wrap_table_cells": false,
+            "table_transpose": false,
+            "table_dynamic_columns": false,
+            "mark_line": [],
+            "override_config": []
+          },
+          "queryType": "sql",
+          "queries": [
+            {
+              "query": "SELECT client_location AS ubicacion, max(client_timezone) AS zona_horaria, max(client_local_time) AS hora_local, max(client_device) AS dispositivo, max(client_screen) AS pantalla, max(client_cpu_cores) AS nucleos, max(gpu) AS gpu, round(avg(cpu_bench_ms), 1) AS cpu_prueba_ms, max(long_tasks_ms) AS cpu_bloqueada_ms, max(js_heap_mb) AS memoria_js_mb, max(client_lat) AS lat, max(client_lon) AS lon FROM \"default\" WHERE event = 'client_device' GROUP BY ubicacion ORDER BY ubicacion",
+              "vrlFunctionQuery": "",
+              "customQuery": true,
+              "fields": {
+                "stream": "default",
+                "stream_type": "logs",
+                "x": [
+                  {
+                    "label": "ubicacion",
+                    "alias": "ubicacion",
+                    "column": "ubicacion",
+                    "color": null,
+                    "isDerived": false
+                  }
+                ],
+                "y": [
+                  {
+                    "label": "zona_horaria",
+                    "alias": "zona_horaria",
+                    "column": "zona_horaria",
+                    "color": "#0f766e",
+                    "isDerived": false
+                  },
+                  {
+                    "label": "hora_local",
+                    "alias": "hora_local",
+                    "column": "hora_local",
+                    "color": "#0f766e",
+                    "isDerived": false
+                  },
+                  {
+                    "label": "dispositivo",
+                    "alias": "dispositivo",
+                    "column": "dispositivo",
+                    "color": "#0f766e",
+                    "isDerived": false
+                  },
+                  {
+                    "label": "pantalla",
+                    "alias": "pantalla",
+                    "column": "pantalla",
+                    "color": "#0f766e",
+                    "isDerived": false
+                  },
+                  {
+                    "label": "nucleos",
+                    "alias": "nucleos",
+                    "column": "nucleos",
+                    "color": "#0f766e",
+                    "isDerived": false
+                  },
+                  {
+                    "label": "gpu",
+                    "alias": "gpu",
+                    "column": "gpu",
+                    "color": "#0f766e",
+                    "isDerived": false
+                  },
+                  {
+                    "label": "cpu_prueba_ms",
+                    "alias": "cpu_prueba_ms",
+                    "column": "cpu_prueba_ms",
+                    "color": "#0f766e",
+                    "isDerived": false
+                  },
+                  {
+                    "label": "cpu_bloqueada_ms",
+                    "alias": "cpu_bloqueada_ms",
+                    "column": "cpu_bloqueada_ms",
+                    "color": "#0f766e",
+                    "isDerived": false
+                  },
+                  {
+                    "label": "memoria_js_mb",
+                    "alias": "memoria_js_mb",
+                    "column": "memoria_js_mb",
+                    "color": "#0f766e",
+                    "isDerived": false
+                  },
+                  {
+                    "label": "lat",
+                    "alias": "lat",
+                    "column": "lat",
+                    "color": "#0f766e",
+                    "isDerived": false
+                  },
+                  {
+                    "label": "lon",
+                    "alias": "lon",
+                    "column": "lon",
+                    "color": "#0f766e",
+                    "isDerived": false
+                  }
+                ],
+                "z": [],
+                "breakdown": [],
+                "filter": {
+                  "filterType": "group",
+                  "logicalOperator": "AND",
+                  "conditions": []
+                }
+              },
+              "config": {
+                "promql_legend": "",
+                "layer_type": "scatter",
+                "weight_fixed": 1,
+                "limit": 0,
+                "min": 0,
+                "max": 100,
+                "time_shift": []
+              }
+            }
+          ],
+          "layout": {
+            "x": 0,
+            "y": 26,
+            "w": 48,
+            "h": 8,
+            "i": 31
+          },
+          "htmlContent": "",
+          "markdownContent": "",
+          "customChartContent": ""
+        },
+        {
+          "id": "Panel_ID32",
+          "type": "line",
+          "title": "CPU del servidor (%) durante la simulación",
+          "description": "",
+          "config": {
+            "show_legends": true,
+            "legends_position": "bottom",
+            "decimals": 2,
+            "axis_border_show": false,
+            "legend_width": {
+              "unit": "px"
+            },
+            "base_map": {
+              "type": "osm"
+            },
+            "map_view": {
+              "zoom": 1,
+              "lat": 0,
+              "lng": 0
+            },
+            "map_symbol_config": {
+              "size": "by Value",
+              "min": 1,
+              "max": 100
+            },
+            "connect_nulls": true,
+            "no_value_replacement": "",
+            "wrap_table_cells": false,
+            "table_transpose": false,
+            "table_dynamic_columns": false,
+            "mark_line": [],
+            "override_config": [],
+            "unit": "percent"
+          },
+          "queryType": "promql",
+          "queries": [
+            {
+              "query": "100 * (1 - avg(system_cpu_utilization{state=\"idle\"}))",
+              "vrlFunctionQuery": "",
+              "customQuery": true,
+              "fields": {
+                "stream": "system_cpu_utilization",
+                "stream_type": "metrics",
+                "x": [],
+                "y": [],
+                "z": [],
+                "filter": {
+                  "filterType": "group",
+                  "logicalOperator": "AND",
+                  "conditions": []
+                }
+              },
+              "config": {
+                "promql_legend": "CPU EC2",
+                "layer_type": "scatter",
+                "weight_fixed": 1,
+                "limit": 0,
+                "time_shift": [],
+                "min": 0,
+                "max": 100
+              }
+            }
+          ],
+          "layout": {
+            "x": 0,
+            "y": 34,
+            "w": 24,
+            "h": 8,
+            "i": 32
+          },
+          "htmlContent": "",
+          "markdownContent": "",
+          "customChartContent": ""
+        },
+        {
+          "id": "Panel_ID33",
+          "type": "line",
+          "title": "RAM del servidor (%) durante la simulación",
+          "description": "",
+          "config": {
+            "show_legends": true,
+            "legends_position": "bottom",
+            "decimals": 2,
+            "axis_border_show": false,
+            "legend_width": {
+              "unit": "px"
+            },
+            "base_map": {
+              "type": "osm"
+            },
+            "map_view": {
+              "zoom": 1,
+              "lat": 0,
+              "lng": 0
+            },
+            "map_symbol_config": {
+              "size": "by Value",
+              "min": 1,
+              "max": 100
+            },
+            "connect_nulls": true,
+            "no_value_replacement": "",
+            "wrap_table_cells": false,
+            "table_transpose": false,
+            "table_dynamic_columns": false,
+            "mark_line": [],
+            "override_config": [],
+            "unit": "percent"
+          },
+          "queryType": "promql",
+          "queries": [
+            {
+              "query": "100 * sum(system_memory_utilization{state=\"used\"})",
+              "vrlFunctionQuery": "",
+              "customQuery": true,
+              "fields": {
+                "stream": "system_memory_utilization",
+                "stream_type": "metrics",
+                "x": [],
+                "y": [],
+                "z": [],
+                "filter": {
+                  "filterType": "group",
+                  "logicalOperator": "AND",
+                  "conditions": []
+                }
+              },
+              "config": {
+                "promql_legend": "RAM EC2",
+                "layer_type": "scatter",
+                "weight_fixed": 1,
+                "limit": 0,
+                "time_shift": [],
+                "min": 0,
+                "max": 100
+              }
+            }
+          ],
+          "layout": {
+            "x": 24,
+            "y": 34,
+            "w": 24,
+            "h": 8,
+            "i": 33
+          },
+          "htmlContent": "",
+          "markdownContent": "",
+          "customChartContent": ""
+        }
+      ]
+    }
+  ],
+  "variables": {
+    "list": [],
+    "showDynamicFilters": true
+  },
+  "defaultDatetimeDuration": {
+    "type": "relative",
+    "relativeTimePeriod": "1h",
+    "startTime": 0,
+    "endTime": 0
+  }
+}

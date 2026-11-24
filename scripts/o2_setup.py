@@ -83,10 +83,12 @@ def promql(title, exprs, x, y, w=24, h=9, unit=None, kind="line", description=""
 
 
 def sql(title, query, stream, stream_type, xs, ys, zs, x, y, w=24, h=9, kind="line", unit=None, description="",
-        decimals=2):
+        decimals=2, labels=None):
     """xs/ys/zs: alias de columnas del query para ejes x, y y desglose (breakdown)."""
+    names = {**LABELS, **(labels or {})}
+
     def col(alias, color=None):
-        label = LABELS.get(alias, alias)
+        label = names.get(alias, alias)
         return {"label": label, "alias": alias, "column": alias, "color": color, "isDerived": False}
     queries = [{"query": query, "vrlFunctionQuery": "", "customQuery": True,
                 "fields": {"stream": stream, "stream_type": stream_type,
@@ -98,7 +100,7 @@ def sql(title, query, stream, stream_type, xs, ys, zs, x, y, w=24, h=9, kind="li
     return _base(title, kind, "sql", queries, x, y, w, h, unit, description, decimals)
 
 
-LABELS = {"x_axis_1": "Hora", "y_axis_1": "Total", "breakdown_1": "Serie"}
+LABELS = {"x_axis_1": "Hora", "y_axis_1": "Total", "y_axis_2": "Total 2", "breakdown_1": "Serie"}
 
 
 def dashboard(title, description, panels, period="30m"):
@@ -214,6 +216,65 @@ def cicd_dashboard():
     ], period="7d")
 
 
+def clients_dashboard():
+    """Experiencia por ubicación y dispositivo (datos que envía el navegador y simulación de clientes)."""
+    api = f"FROM {LOGS} WHERE event = 'client_api'"
+    return dashboard("Clientes y dispositivos (simulación)",
+                     "Ubicación, zona horaria, dispositivo, red, CPU y GPU de los clientes; tiempo percibido frente al del servidor", [
+        sql("Tiempo de respuesta percibido por ubicación (ms)",
+            f"SELECT histogram(_timestamp) AS x_axis_1, client_location AS breakdown_1, round(avg(duration_ms), 1) AS y_axis_1 "
+            f"{api} GROUP BY x_axis_1, breakdown_1 ORDER BY x_axis_1", "default", "logs",
+            ["x_axis_1"], ["y_axis_1"], ["breakdown_1"], 0, 0, 24, 9, unit="custom:ms",
+            labels={"y_axis_1": "ms percibidos", "breakdown_1": "Ubicación"},
+            description="Lo que tarda cada llamada a la API vista desde el navegador: incluye la red del cliente"),
+        sql("Peticiones por ubicación",
+            f"SELECT histogram(_timestamp) AS x_axis_1, client_location AS breakdown_1, count(*) AS y_axis_1 "
+            f"{api} GROUP BY x_axis_1, breakdown_1 ORDER BY x_axis_1", "default", "logs",
+            ["x_axis_1"], ["y_axis_1"], ["breakdown_1"], 24, 0, 24, 9, kind="bar",
+            labels={"y_axis_1": "Peticiones", "breakdown_1": "Ubicación"}),
+        sql("Comparativa por ubicación",
+            f"SELECT client_location AS ubicacion, max(client_timezone) AS zona_horaria, max(client_device) AS dispositivo, "
+            f"count(*) AS peticiones, round(avg(duration_ms), 1) AS percibido_prom_ms, "
+            f"round(approx_percentile_cont(duration_ms, 0.95), 1) AS percibido_p95_ms, "
+            f"sum(CASE WHEN status_code >= 400 OR status_code = 0 THEN 1 ELSE 0 END) AS errores {api} "
+            f"GROUP BY ubicacion ORDER BY percibido_prom_ms DESC", "default", "logs", ["ubicacion"],
+            ["zona_horaria", "dispositivo", "peticiones", "percibido_prom_ms", "percibido_p95_ms", "errores"], [],
+            0, 9, 48, 8, kind="table"),
+        sql("Tiempo en el servidor por ubicación (ms)",
+            f"SELECT client_location AS x_axis_1, round(avg(duration_ms), 1) AS y_axis_1 FROM {LOGS} "
+            f"WHERE event = 'http_request' AND client_location != '' GROUP BY x_axis_1 ORDER BY x_axis_1",
+            "default", "logs", ["x_axis_1"], ["y_axis_1"], [], 0, 17, 16, 9, kind="bar", unit="custom:ms",
+            labels={"x_axis_1": "Ubicación", "y_axis_1": "ms en servidor"},
+            description="Tiempo medido dentro de la EC2 (incluye recibir la petición por la red del cliente)"),
+        sql("Carga de la página por ubicación (ms)",
+            f"SELECT client_location AS x_axis_1, round(avg(ttfb_ms), 1) AS y_axis_1, round(avg(load_ms), 1) AS y_axis_2 "
+            f"FROM {LOGS} WHERE event = 'client_page' GROUP BY x_axis_1 ORDER BY x_axis_1", "default", "logs",
+            ["x_axis_1"], ["y_axis_1", "y_axis_2"], [], 16, 17, 16, 9, kind="bar", unit="custom:ms",
+            labels={"x_axis_1": "Ubicación", "y_axis_1": "Primer byte (TTFB)", "y_axis_2": "Carga completa"},
+            description="Primer byte (TTFB) y carga completa de la página en el navegador"),
+        sql("CPU del dispositivo: prueba de cálculo (ms)",
+            f"SELECT client_location AS x_axis_1, round(avg(cpu_bench_ms), 1) AS y_axis_1 FROM {LOGS} "
+            f"WHERE event = 'client_device' GROUP BY x_axis_1 ORDER BY x_axis_1", "default", "logs",
+            ["x_axis_1"], ["y_axis_1"], [], 32, 17, 16, 9, kind="bar", unit="custom:ms",
+            labels={"x_axis_1": "Ubicación", "y_axis_1": "ms de la prueba"},
+            description="Misma carga de cálculo en cada navegador: más milisegundos = CPU más lenta o más ocupada"),
+        sql("Dispositivos detectados",
+            f"SELECT client_location AS ubicacion, max(client_timezone) AS zona_horaria, max(client_local_time) AS hora_local, "
+            f"max(client_device) AS dispositivo, max(client_screen) AS pantalla, max(client_cpu_cores) AS nucleos, "
+            f"max(gpu) AS gpu, round(avg(cpu_bench_ms), 1) AS cpu_prueba_ms, max(long_tasks_ms) AS cpu_bloqueada_ms, "
+            f"max(js_heap_mb) AS memoria_js_mb, max(client_lat) AS lat, max(client_lon) AS lon "
+            f"FROM {LOGS} WHERE event = 'client_device' GROUP BY ubicacion ORDER BY ubicacion", "default", "logs",
+            ["ubicacion"], ["zona_horaria", "hora_local", "dispositivo", "pantalla", "nucleos", "gpu", "cpu_prueba_ms",
+                            "cpu_bloqueada_ms", "memoria_js_mb", "lat", "lon"], [], 0, 26, 48, 8, kind="table"),
+        promql("CPU del servidor (%) durante la simulación",
+               [('100 * (1 - avg(system_cpu_utilization{state="idle"}))', "CPU EC2")],
+               0, 34, 24, 8, unit="percent", min_=0, max_=100),
+        promql("RAM del servidor (%) durante la simulación",
+               [('100 * sum(system_memory_utilization{state="used"})', "RAM EC2")],
+               24, 34, 24, 8, unit="percent", min_=0, max_=100),
+    ], period="1h")
+
+
 # ------------------------------------------------------------------ alertas --- #
 def upsert(base, body):
     """Actualiza (PUT) si ya existe; si no, crea (POST)."""
@@ -296,7 +357,7 @@ def dashboards():
     st, existing = call("GET", f"/api/{ORG}/dashboards")
     items = existing.get("dashboards", []) if isinstance(existing, dict) else []
     for build, fname in ((infra_dashboard, "infraestructura_ec2.json"), (app_dashboard, "aplicacion.json"),
-                         (cicd_dashboard, "cicd_alertas.json")):
+                         (cicd_dashboard, "cicd_alertas.json"), (clients_dashboard, "clientes_simulacion.json")):
         d = build()
         (OUT / fname).write_text(json.dumps(d, indent=2, ensure_ascii=False))
         for item in items:

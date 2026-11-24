@@ -9,9 +9,11 @@ import Products from './pages/Products'
 import Users from './pages/Users'
 import NotFound from './pages/NotFound'
 import { initTelemetry } from './telemetry'
+import { initClientMetrics } from './client'
 import './styles.css'
 
 initTelemetry()
+initClientMetrics()
 
 function Private({ children, admin = false }) {
   const { user } = useAuth()

@@ -13,7 +13,7 @@ from sqlalchemy.exc import OperationalError
 from .config import settings
 from .db import Base, SessionLocal, engine
 from .models import Product, User
-from .routers import auth, products, users
+from .routers import auth, client_telemetry, products, users
 from .security import hash_password
 from .telemetry import MetricsMiddleware, setup_telemetry
 
@@ -91,3 +91,4 @@ def health():
 app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(products.router)
+app.include_router(client_telemetry.router)

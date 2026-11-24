@@ -9,6 +9,7 @@ import { DocumentLoadInstrumentation } from '@opentelemetry/instrumentation-docu
 import { FetchInstrumentation } from '@opentelemetry/instrumentation-fetch'
 import { Resource } from '@opentelemetry/resources'
 import { BatchSpanProcessor, WebTracerProvider } from '@opentelemetry/sdk-trace-web'
+import { clientDevice, clientLocation } from './client'
 
 export function initTelemetry() {
   if (import.meta.env.VITE_OTEL_DISABLED === 'true') return
@@ -17,6 +18,10 @@ export function initTelemetry() {
       resource: new Resource({
         'service.name': 'inventrack-web',
         'service.version': import.meta.env.VITE_APP_VERSION || 'dev',
+        // Contexto del cliente: permite filtrar las trazas por ubicación, zona horaria y dispositivo.
+        'client.location': clientLocation(),
+        'client.timezone': Intl.DateTimeFormat().resolvedOptions().timeZone || '',
+        'client.device': clientDevice(),
       }),
     })
     provider.addSpanProcessor(
@@ -28,7 +33,7 @@ export function initTelemetry() {
         new DocumentLoadInstrumentation(),
         new FetchInstrumentation({
           propagateTraceHeaderCorsUrls: [/.*/],
-          ignoreUrls: [/\/otlp\//],
+          ignoreUrls: [/\/otlp\//, /\/api\/telemetry\//],
           clearTimingResources: true,
         }),
       ],

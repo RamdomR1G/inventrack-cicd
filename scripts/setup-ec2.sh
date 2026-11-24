@@ -11,7 +11,7 @@ set -euo pipefail
 
 REPO_URL="${REPO_URL:?Define REPO_URL=https://github.com/<usuario>/<repo>.git}"
 APP_DIR="$HOME/inventrack"
-rand() { tr -dc 'A-Za-z0-9' </dev/urandom | head -c "${1:-20}"; }
+rand() { openssl rand -base64 64 | tr -dc 'A-Za-z0-9' | cut -c1-"${1:-20}"; }
 
 echo "==> 1/6 Paquetes base y Docker"
 sudo apt-get update -qq

@@ -262,10 +262,10 @@ def clients_dashboard():
             f"SELECT client_location AS ubicacion, max(client_timezone) AS zona_horaria, max(client_local_time) AS hora_local, "
             f"max(client_device) AS dispositivo, max(client_screen) AS pantalla, max(client_cpu_cores) AS nucleos, "
             f"max(gpu) AS gpu, round(avg(cpu_bench_ms), 1) AS cpu_prueba_ms, max(long_tasks_ms) AS cpu_bloqueada_ms, "
-            f"max(js_heap_mb) AS memoria_js_mb, max(client_lat) AS lat, max(client_lon) AS lon "
+            f"max(js_heap_mb) AS memoria_js_mb "
             f"FROM {LOGS} WHERE event = 'client_device' GROUP BY ubicacion ORDER BY ubicacion", "default", "logs",
             ["ubicacion"], ["zona_horaria", "hora_local", "dispositivo", "pantalla", "nucleos", "gpu", "cpu_prueba_ms",
-                            "cpu_bloqueada_ms", "memoria_js_mb", "lat", "lon"], [], 0, 26, 48, 8, kind="table"),
+                            "cpu_bloqueada_ms", "memoria_js_mb"], [], 0, 26, 48, 8, kind="table"),
         promql("CPU del servidor (%) durante la simulación",
                [('100 * (1 - avg(system_cpu_utilization{state="idle"}))', "CPU EC2")],
                0, 34, 24, 8, unit="percent", min_=0, max_=100),

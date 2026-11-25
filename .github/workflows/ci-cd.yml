@@ -1,9 +1,18 @@
 # CI/CD de InvenTrack
-#  1. test:   levanta el sistema completo con Docker Compose y corre la suite Playwright + pytest
-#             (backend por API y frontend en el navegador). Registra el resultado en OpenObserve.
-#  2. deploy: SOLO si las pruebas pasaron y es un push a main: entra por SSH a la EC2,
-#             actualiza los contenedores y registra el despliegue en OpenObserve.
-#  3. blocked: si las pruebas fallan en main, registra el bloqueo; nunca se abre la conexión SSH.
+#
+#   Análisis de código -> Construir imágenes -+-> Pruebas backend (API)   -+-> Despliegue en AWS EC2 -> Verificación en producción
+#                                             +-> Pruebas frontend (E2E)  -+
+#                                                  (si algo falla) -> Despliegue bloqueado
+#
+#  1. lint:     revisa errores en el código Python (ruff) y que el frontend compile (Vite).
+#  2. build:    construye las imágenes Docker de la API y del frontend.
+#  3. test-api / test-e2e: levantan el sistema completo con Docker Compose y corren la suite
+#               Playwright + pytest en paralelo (backend por API y frontend en el navegador).
+#               Cada una registra su resultado en OpenObserve.
+#  4. deploy:   SOLO si todo lo anterior pasó y es un push a main: entra por SSH a la EC2,
+#               actualiza los contenedores y registra el despliegue en OpenObserve.
+#  5. verify:   comprueba el sistema publicado (salud, versión, frontend e inicio de sesión).
+#  6. blocked:  si falla cualquier etapa previa en main, registra el bloqueo; nunca se abre SSH.
 name: CI/CD
 
 on:
@@ -27,8 +36,111 @@ env:
   COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
 
 jobs:
-  test:
-    name: Pruebas Playwright (frontend + backend)
+  lint:
+    name: Análisis de código
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: "Python (ruff): errores de sintaxis y nombres indefinidos"
+        run: |
+          pip install ruff
+          ruff check --isolated --select E9,F backend scripts tests
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: "Frontend: instalar dependencias y compilar"
+        working-directory: frontend
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+
+  build:
+    name: Construir imágenes Docker
+    needs: lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      APP_VERSION: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Construir API y frontend
+        run: docker compose build
+
+      - name: Listar imágenes
+        run: docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}" | grep -E "REPOSITORY|inventrack"
+
+  test-api:
+    name: Pruebas backend (API)
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      WEB_PORT: "8080"
+      BASE_URL: http://localhost:8080
+      APP_VERSION: ${{ github.sha }}
+      OTEL_SDK_DISABLED: "true"
+      ADMIN_EMAIL: admin@inventrack.com
+      ADMIN_PASSWORD: Admin123*
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Levantar el sistema (PostgreSQL + API + frontend)
+        run: docker compose up -d --build --wait --wait-timeout 180
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-test.txt
+
+      - name: Instalar Playwright
+        run: pip install -r requirements-test.txt
+
+      - name: Ejecutar pruebas del backend
+        run: python -m pytest -m api
+
+      - name: Resumen de resultados
+        if: always()
+        run: python scripts/ci_summary.py "Pruebas backend (API)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Registrar resultado en OpenObserve
+        if: always()
+        run: >
+          python scripts/o2_event.py test_result ${{ job.status }}
+          --junit reports/junit.xml
+          --message "Pruebas de backend ${{ job.status == 'success' && 'aprobadas' || 'fallidas' }} en ${{ github.ref_name }}"
+          --extra '{"suite": "api"}'
+
+      - name: Logs de los contenedores (si falló)
+        if: failure()
+        run: docker compose logs --tail=150
+
+      - name: Publicar reportes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reportes-api-${{ github.run_number }}
+          path: reports/
+          retention-days: 14
+
+      - name: Apagar contenedores
+        if: always()
+        run: docker compose down -v
+
+  test-e2e:
+    name: Pruebas frontend (E2E)
+    needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
@@ -50,34 +162,25 @@ jobs:
           cache: pip
           cache-dependency-path: requirements-test.txt
 
-      - name: Instalar Playwright
+      - name: Instalar Playwright y Chromium
         run: |
           pip install -r requirements-test.txt
           python -m playwright install --with-deps chromium
 
-      - name: Ejecutar suite de pruebas
-        run: python -m pytest
+      - name: Ejecutar pruebas del frontend en el navegador
+        run: python -m pytest -m e2e
 
       - name: Resumen de resultados
         if: always()
-        run: |
-          python - <<'EOF' >> "$GITHUB_STEP_SUMMARY"
-          import json, subprocess, os
-          from scripts.o2_event import junit_summary
-          s = junit_summary("reports/junit.xml")
-          print("## Resultado de las pruebas")
-          print(f"| Total | Pasaron | Fallaron | Omitidas | Duración |\n|---|---|---|---|---|")
-          print(f"| {s.get('tests_total',0)} | {s.get('tests_passed',0)} | {s.get('tests_failed',0)} | {s.get('tests_skipped',0)} | {s.get('tests_duration_s',0)} s |")
-          if s.get("failed_tests"):
-              print("\n**Fallidas:** " + s["failed_tests"])
-          EOF
+        run: python scripts/ci_summary.py "Pruebas frontend (E2E)" >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Registrar resultado de pruebas en OpenObserve
+      - name: Registrar resultado en OpenObserve
         if: always()
         run: >
           python scripts/o2_event.py test_result ${{ job.status }}
           --junit reports/junit.xml
-          --message "Pruebas ${{ job.status == 'success' && 'aprobadas' || 'fallidas' }} en ${{ github.ref_name }}"
+          --message "Pruebas de frontend ${{ job.status == 'success' && 'aprobadas' || 'fallidas' }} en ${{ github.ref_name }}"
+          --extra '{"suite": "e2e"}'
 
       - name: Logs de los contenedores (si falló)
         if: failure()
@@ -87,7 +190,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: reportes-pruebas-${{ github.run_number }}
+          name: reportes-e2e-${{ github.run_number }}
           path: reports/
           retention-days: 14
 
@@ -97,7 +200,7 @@ jobs:
 
   deploy:
     name: Despliegue en AWS EC2
-    needs: test
+    needs: [test-api, test-e2e]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -120,14 +223,6 @@ jobs:
             "APP_SHA=${{ github.sha }} bash -s" < scripts/deploy.sh
           echo "seconds=$(( $(date +%s) - start ))" >> "$GITHUB_OUTPUT"
 
-      - name: Verificar el sistema publicado
-        run: |
-          for i in $(seq 1 20); do
-            curl -fsS "http://${{ secrets.EC2_HOST }}/api/health" && exit 0
-            sleep 3
-          done
-          exit 1
-
       - name: Registrar despliegue en OpenObserve
         if: always()
         run: >
@@ -135,9 +230,54 @@ jobs:
           --message "Despliegue ${{ job.status == 'success' && 'completado' || 'fallido' }} en EC2 (${{ github.sha }})"
           --extra '{"target": "aws-ec2", "host": "${{ secrets.EC2_HOST }}", "deploy_seconds": "${{ steps.deploy.outputs.seconds }}", "app_version": "${{ github.sha }}"}'
 
+  verify:
+    name: Verificación en producción
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SITE: http://${{ secrets.EC2_HOST }}
+      APP_USER: ${{ secrets.APP_USER }}
+      APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: API en línea con la versión recién desplegada
+        run: |
+          short="${GITHUB_SHA::7}"
+          for i in $(seq 1 20); do
+            body="$(curl -fsS "$SITE/api/health" || true)"
+            echo "$body"
+            echo "$body" | grep -q "\"$short" && exit 0
+            sleep 3
+          done
+          echo "La EC2 no responde con la versión $short"; exit 1
+
+      - name: Frontend publicado
+        run: curl -fsS "$SITE/" | grep -q '<div id="root">'
+
+      - name: Inicio de sesión real contra la EC2
+        if: env.APP_PASSWORD != ''
+        run: |
+          curl -fsS -X POST "$SITE/api/auth/login" -H 'content-type: application/json' \
+            -d "$(python3 -c 'import json,os; print(json.dumps({"email": os.environ["APP_USER"], "password": os.environ["APP_PASSWORD"]}))')" \
+            | python3 -c 'import json,sys; d=json.load(sys.stdin); assert d["access_token"]; print("Sesión iniciada como", d["user"]["email"])'
+
+      - name: Resumen
+        if: always()
+        run: |
+          echo "## Verificación en producción (${{ job.status }})" >> "$GITHUB_STEP_SUMMARY"
+          echo "Sistema: $SITE - versión \`${GITHUB_SHA::7}\`" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Registrar verificación en OpenObserve
+        if: always()
+        run: >
+          python3 scripts/o2_event.py verify ${{ job.status }}
+          --message "Verificación en producción ${{ job.status == 'success' && 'correcta' || 'fallida' }} (${{ github.sha }})"
+
   blocked:
     name: Despliegue bloqueado
-    needs: test
+    needs: [lint, build, test-api, test-e2e]
     if: failure() && github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
@@ -145,8 +285,17 @@ jobs:
       - name: Registrar bloqueo en OpenObserve
         run: >
           python3 scripts/o2_event.py deploy_blocked blocked
-          --message "Las pruebas fallaron: no se abrió la conexión SSH ni se actualizó la EC2"
+          --message "Falló una etapa previa (análisis, construcción o pruebas): no se abrió la conexión SSH ni se actualizó la EC2"
       - name: Marcar el bloqueo
         run: |
-          echo "## Despliegue bloqueado" >> "$GITHUB_STEP_SUMMARY"
-          echo "La suite de pruebas falló en el commit \`${GITHUB_SHA::7}\`; la EC2 no se tocó." >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "## Despliegue bloqueado"
+            echo "Falló una etapa previa en el commit \`${GITHUB_SHA::7}\`; la EC2 no se tocó."
+            echo ""
+            echo "| Etapa | Resultado |"
+            echo "|---|---|"
+            echo "| Análisis de código | ${{ needs.lint.result }} |"
+            echo "| Construir imágenes | ${{ needs.build.result }} |"
+            echo "| Pruebas backend (API) | ${{ needs.test-api.result }} |"
+            echo "| Pruebas frontend (E2E) | ${{ needs.test-e2e.result }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
